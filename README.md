@@ -19,11 +19,7 @@ AetherCrypt is a modern, secure web application for text encryption and decrypti
 -   **Seamless UX:** The frontend communicates with the backend asynchronously, meaning the 3D animation is never interrupted while performing cryptographic operations.
 -   **Self-Contained & Easy to Run:** The entire application runs with Node.js and has no external dependencies like databases or cloud services.
 
-## 🛠️ Tech Stack
 
--   **Backend:** Node.js, Express.js, Node Crypto Module
--   **Frontend:** HTML5, CSS3, JavaScript (ES6+), Three.js
--   **Deployment:** GitHub Pages (Frontend), Railway (Backend)
 
 ## 🚀 Running Locally
 
