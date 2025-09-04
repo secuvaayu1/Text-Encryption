@@ -43,3 +43,13 @@ You need to have [Node.js](https://nodejs.org/) (version 14 or higher) and `npm`
 ## 📄 License
 
 This project is licensed under the MIT License.
+
+## Installation 
+
+1) git clone https://github.com/secuvaayu1/Text-Encryption.git
+2) cd Text-Encryption
+3) npm install express
+4) node server.js
+
+   
+
