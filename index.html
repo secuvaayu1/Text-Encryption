@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AetherCrypt - Secure 3D Encryption</title>
+    <style>
+        /* All the CSS styles are here */
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+        :root { --primary-glow: #00ddff; --secondary-glow: #ff00de; --background-color: #030014; --panel-background: rgba(10, 10, 35, 0.6); --border-color: rgba(0, 221, 255, 0.4); --font-color: #f0f0f0; }
+        body { margin: 0; padding: 0; font-family: 'Orbitron', sans-serif; background-color: var(--background-color); color: var(--font-color); overflow: hidden; }
+        #bg-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; }
+        main { display: flex; justify-content: center; align-items: center; height: 100vh; padding: 20px; box-sizing: border-box; }
+        .crypto-panel { width: 100%; max-width: 700px; background: var(--panel-background); border: 1px solid var(--border-color); border-radius: 15px; padding: 30px; box-shadow: 0 0 25px rgba(0, 221, 255, 0.2), inset 0 0 15px rgba(0, 221, 255, 0.1); backdrop-filter: blur(10px); text-align: center; animation: fadeIn 1.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+        h1 { color: var(--primary-glow); text-shadow: 0 0 10px var(--primary-glow); letter-spacing: 2px; margin-bottom: 25px; }
+        textarea { width: 100%; height: 150px; background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); border-radius: 8px; color: var(--font-color); font-family: 'Courier New', Courier, monospace; font-size: 1rem; padding: 15px; box-sizing: border-box; resize: none; transition: all 0.3s ease; }
+        textarea:focus { outline: none; border-color: var(--primary-glow); box-shadow: 0 0 15px var(--primary-glow); }
+        .button-group { margin-top: 20px; display: flex; gap: 15px; justify-content: center; }
+        .btn { padding: 12px 25px; border: 1px solid var(--primary-glow); border-radius: 5px; background: transparent; color: var(--primary-glow); font-family: 'Orbitron', sans-serif; font-size: 1rem; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; transition: all 0.3s ease; position: relative; overflow: hidden; }
+        .btn:hover { background: var(--primary-glow); color: var(--background-color); box-shadow: 0 0 20px var(--primary-glow); }
+        .btn-decrypt { border-color: var(--secondary-glow); color: var(--secondary-glow); }
+        .btn-decrypt:hover { background: var(--secondary-glow); box-shadow: 0 0 20px var(--secondary-glow); }
+        #result-area { margin-top: 25px; text-align: left; opacity: 0; transition: opacity 0.5s ease; max-height: 0; overflow: hidden; }
+        #result-area.visible { opacity: 1; max-height: 500px; }
+        h2 { color: #fff; border-bottom: 1px solid var(--border-color); padding-bottom: 5px; }
+        #result-content { background: rgba(0,0,0,0.5); padding: 15px; border-radius: 5px; word-wrap: break-word; font-family: 'Courier New', Courier, monospace; white-space: pre-wrap; max-height: 200px; overflow-y: auto; }
+        #result-content.error { color: #ff4d4d; }
+        .loader { display: none; margin: 20px auto 0; border: 5px solid rgba(255, 255, 255, 0.2); border-top: 5px solid var(--primary-glow); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <canvas id="bg-canvas"></canvas>
+
+    <main>
+        <div class="crypto-panel">
+            <h1>AetherCrypt</h1>
+            <form id="cryptoForm">
+                <textarea name="text" id="inputText" placeholder="Enter text to encrypt or the full payload to decrypt..."></textarea>
+                <div class="button-group">
+                    <button type="submit" name="action" value="encrypt" class="btn btn-encrypt">Encrypt</button>
+                    <button type="submit" name="action" value="decrypt" class="btn btn-decrypt">Decrypt</button>
+                </div>
+            </form>
+            <div class="loader" id="loader"></div>
+            <div id="result-area">
+                <h2 id="result-title"></h2>
+                <pre id="result-content"></pre>
+            </div>
+        </div>
+    </main>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <script>
+        // --- 3D BACKGROUND ANIMATION (UNCHANGED) ---
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('bg-canvas'), antialias: true, });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        const particleCount = 7000;
+        const positions = new Float32Array(particleCount * 3);
+        for (let i = 0; i < particleCount * 3; i++) { positions[i] = (Math.random() - 0.5) * 20; }
+        const particlesGeometry = new THREE.BufferGeometry();
+        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        const particlesMaterial = new THREE.PointsMaterial({ size: 0.02, color: 0x00ddff, transparent: true, blending: THREE.AdditiveBlending, });
+        const particleSystem = new THREE.Points(particlesGeometry, particlesMaterial);
+        scene.add(particleSystem);
+        camera.position.z = 5;
+        let mouseX = 0, mouseY = 0;
+        document.addEventListener('mousemove', (event) => { mouseX = (event.clientX / window.innerWidth) * 2 - 1; mouseY = -(event.clientY / window.innerHeight) * 2 + 1; });
+        function animate() { requestAnimationFrame(animate); particleSystem.rotation.x += 0.0001; particleSystem.rotation.y += 0.0002; camera.position.x += (mouseX * 0.5 - camera.position.x) * 0.05; camera.position.y += (mouseY * 0.5 - camera.position.y) * 0.05; camera.lookAt(scene.position); renderer.render(scene, camera); }
+        window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
+        animate();
+
+        // --- ASYNCHRONOUS FORM HANDLING ---
+        const form = document.getElementById('cryptoForm');
+        const loader = document.getElementById('loader');
+        const resultArea = document.getElementById('result-area');
+        const resultTitle = document.getElementById('result-title');
+        const resultContent = document.getElementById('result-content');
+
+        form.addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            // =======================================================================
+            // === THIS IS THE MOST IMPORTANT PART - IT POINTS TO YOUR LIVE BACKEND ===
+            // =======================================================================
+            const backendUrl = "https://text-encryption-production.up.railway.app"; 
+            
+            const action = event.submitter.value;
+            const endpoint = action === 'encrypt' ? `${backendUrl}/encrypt` : `${backendUrl}/decrypt`;
+            const formData = new FormData(this);
+            const text = formData.get('text');
+
+            if (!text) { alert('Please enter some text!'); return; }
+
+            loader.style.display = 'block';
+            resultArea.classList.remove('visible');
+
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams(formData).toString()
+                });
+
+                const resultHtml = await response.text();
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(resultHtml, 'text/html');
+                
+                resultTitle.textContent = doc.querySelector('h1').textContent;
+                let resultText;
+                const resultTextarea = doc.querySelector('textarea');
+                const resultParagraph = doc.querySelector('p');
+                if (resultTextarea) { resultText = resultTextarea.value; } 
+                else if (resultParagraph) { resultText = resultParagraph.textContent; }
+                else { resultText = "Could not parse server response."; }
+                resultContent.textContent = resultText;
+                resultContent.classList.toggle('error', !response.ok);
+
+            } catch (error) {
+                resultTitle.textContent = "Connection Error";
+                resultContent.textContent = "Could not connect to the server. Please ensure it's running.";
+                resultContent.classList.add('error');
+            } finally {
+                loader.style.display = 'none';
+                resultArea.classList.add('visible');
+            }
+        });
+    </script>
+</body>
+</html>
