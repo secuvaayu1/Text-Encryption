@@ -8,10 +8,7 @@
 
 AetherCrypt is a modern, secure web application for text encryption and decryption, featuring a stunning, interactive 3D animated interface. It demonstrates best practices in modern cryptography within a self-contained, easy-to-run project.
 
-**[Link to your Live Demo Website on GitHub Pages Here]**
 
-![AetherCrypt Screenshot](demo.png)
-<!-- For this to work, add a screenshot of your app to the project folder and name it "demo.png" -->
 
 ## ✨ Features
 
